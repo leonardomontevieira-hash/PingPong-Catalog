@@ -61,6 +61,11 @@ const SKILLS: Skill[] = [
     rank: 'A'
   },
   {
+    name: 'sede de sangue',
+    description: 'uma habilidade que faz com que o jogador sempre encontre o ponto certo para matar, sempre encontrando uma brecha independentemente do lado em que a bolinha está na mesa.',
+    rank: 'A'
+  },
+  {
     name: 'fake saque',
     description: 'ela consiste em olhar para um lado da mesa do seu oponente e sacar para o lado oposto com velocidade, dando menos tempo de reação ao oponente',
     rank: 'B'
@@ -99,7 +104,17 @@ const TOPICS: Topic[] = [
   {
     id: '8',
     title: '8ºano',
-    players: []
+    players: [
+      { 
+        id: '8-kevin', 
+        name: 'Kevin', 
+        stats: { ataque: 8, defesa: 5, saque: 6, efeito: 4, visao: 8 },
+        description: 'um jogador feito para matar, não conseguindo se segurar durante as partidas, isso acaba prejudicando sua defesa.',
+        style: '4 Dedos',
+        weaknesses: ['Defesa vulnerável por agressividade excessiva', 'Falta de autocontrole ofensivo'],
+        skills: ['sede de sangue']
+      },
+    ]
   },
   {
     id: '9',
@@ -146,7 +161,7 @@ const TOPICS: Topic[] = [
         style: 'clássico',
         weaknesses: ['Instabilidade emocional/técnica'],
         specialty: 'Efeito',
-        skills: ['Mestre do efeito', 'adaptação lógica']
+        skills: ['Mestre do efeito', 'adaptação lógica', 'sede de sangue']
       },
       { 
         id: '9-matheus', 
@@ -173,6 +188,30 @@ const TOPICS: Topic[] = [
         style: '4 Dedos',
         weaknesses: ['Falar enquanto joga', 'Lado esquerdo superior'],
         skills: ['Tela preta', 'fake saque', 'adaptação lógica']
+      },
+      { 
+        id: '9-yan', 
+        name: 'Yan', 
+        stats: { ataque: 6, defesa: 7, saque: 6, efeito: 7, visao: 7 },
+        description: 'Jogador malicioso, sempre apto pra cortar ou finalizar, com cartas na manga a maioria do tempo',
+        style: '4 Dedos',
+        skills: ['fake saque']
+      },
+      { 
+        id: '9-catota', 
+        name: 'Catota', 
+        stats: { ataque: 5, defesa: 7, saque: 4, efeito: 1, visao: 3 },
+        description: 'jogador mediano/abaido da média, tem um estilo de jogo parado e nada flexivel, sua defesa é facilmente quebradas com ataques de alta velocidade.',
+        style: 'Horizontal',
+        weaknesses: ['Estilo de jogo parado', 'Nada flexível', 'Defesa vulnerável a alta velocidade']
+      },
+      { 
+        id: '9-enzio', 
+        name: 'Enzio', 
+        stats: { ataque: 4, defesa: 5, saque: 2, efeito: 0, visao: 3 },
+        description: 'Jogador semi aposentado, não tem nenhuma qualidade muito grande e precisa aprender efeito.',
+        style: 'Horizontal',
+        weaknesses: ['Falta de efeito', 'Falta de qualidades técnicas marcantes']
       },
     ]
   },
