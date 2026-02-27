@@ -3,9 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Activity, LayoutGrid, ChevronRight, Info, X, Target } from 'lucide-react';
+import { User, Activity, LayoutGrid, ChevronRight, Info, X, Target, MessageSquare, Send, Bot, ChevronLeft, BookOpen } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 interface Stats {
   ataque: number;
@@ -94,7 +101,15 @@ const TOPICS: Topic[] = [
   {
     id: '6',
     title: '6ºano',
-    players: []
+    players: [
+      {
+        id: '6-fabricio',
+        name: 'Fabricio',
+        stats: { ataque: 7, defesa: 6, saque: 5, efeito: 3, visao: 8 },
+        description: 'Potencial bom, fome por poder e muita ambição, entretanto ele subestima os demais facilmente.',
+        style: 'clássico',
+      }
+    ]
   },
   {
     id: '7',
@@ -110,7 +125,7 @@ const TOPICS: Topic[] = [
         name: 'Kevin', 
         stats: { ataque: 8, defesa: 5, saque: 6, efeito: 4, visao: 8 },
         description: 'um jogador feito para matar, não conseguindo se segurar durante as partidas, isso acaba prejudicando sua defesa.',
-        style: '4 Dedos',
+        style: '1 dedo',
         weaknesses: ['Defesa vulnerável por agressividade excessiva', 'Falta de autocontrole ofensivo'],
         skills: ['sede de sangue']
       },
@@ -123,7 +138,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-dutra', 
         name: 'Dutra', 
-        stats: { ataque: 7, defesa: 9, saque: 8, efeito: 6, visao: 8 },
+        stats: { ataque: 7, defesa: 9, saque: 7, efeito: 6, visao: 8 },
         description: 'Um jogador com talento nato, aprende rápido e decora padrões de médio porte, a melhor estratégia é um ataque sem trégua, por mais que sua defesa seja alta, o escudo sempre quebra.',
         style: 'clássico',
         weaknesses: ['Ataque sem trégua (escudo quebra)', 'Pressão constante'],
@@ -132,7 +147,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-ph', 
         name: 'PH', 
-        stats: { ataque: 4, defesa: 5, saque: 4, efeito: 3, visao: 4 },
+        stats: { ataque: 5, defesa: 5, saque: 4, efeito: 5, visao: 4 },
         description: 'um jogador abaixo da media, não apresenta grandes evoluções com o decorrer do tempo, sabe o básico e entende as regras, mas não parece entender o verdadeiro motivo para não evoluir.',
         style: '4 Dedos',
         weaknesses: ['Falta de evolução', 'Dificuldade técnica básica']
@@ -140,7 +155,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-miguel', 
         name: 'Miguel', 
-        stats: { ataque: 6, defesa: 6, saque: 6, efeito: 8, visao: 8 },
+        stats: { ataque: 6, defesa: 6, saque: 6, efeito: 7, visao: 7 },
         description: 'um jogador com potencial para uma grande visão de jogo, futuramente podendo prever movimentos, ainda falta controle para saber a hora certa de atacar, com mais pratica pode se tornar muito mais do que um jogador médio.',
         style: 'clássico',
         weaknesses: ['Falta de controle no ataque', 'Timing ofensivo']
@@ -148,7 +163,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-breno', 
         name: 'Breno', 
-        stats: { ataque: 7, defesa: 7, saque: 7, efeito: 7, visao: 6 },
+        stats: { ataque: 7, defesa: 7, saque: 7, efeito: 6, visao: 6 },
         description: 'Talentoso, aprende rápido e analiza outros jogos para adaptar técnicas para suas partidas, um jogados equilibrado em constante evolução, uma das suas fraquezas é jogadas excessivas ao lado esquerdo dele, uma hora a defesa dele quebra.',
         style: '4 Dedos',
         weaknesses: ['Lado esquerdo vulnerável']
@@ -156,7 +171,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-romagnoli', 
         name: 'Romagnoli', 
-        stats: { ataque: 8, defesa: 9, saque: 8, efeito: 9, visao: 9 },
+        stats: { ataque: 7, defesa: 8, saque: 8, efeito: 9, visao: 9 },
         description: 'um gênio do efeito, estilo clássico elegante, um lobo em pele de cordeiro, sempre com ataques prontos escondidos numa camada de calma e seriedade, entretando é instável apesar de estatisticamente ótimo.',
         style: 'clássico',
         weaknesses: ['Instabilidade emocional/técnica'],
@@ -169,12 +184,13 @@ const TOPICS: Topic[] = [
         stats: { ataque: 8, defesa: 6, saque: 7, efeito: 4, visao: 6 },
         description: 'um estilo de caneta interessante, bonito de se assistir, ele é como um minério raro não esculpido, tem potencial mas não investe, além do mais não aguenta ataques rápidos.',
         style: 'caneta',
-        weaknesses: ['Ataques rápidos', 'Falta de investimento/treino']
+        weaknesses: ['Ataques rápidos', 'Falta de investimento/treino'],
+        skills: ['sede de sangue']
       },
       { 
         id: '9-nicollas', 
         name: 'Nicollas', 
-        stats: { ataque: 9, defesa: 9, saque: 7, efeito: 8, visao: 10 },
+        stats: { ataque: 9, defesa: 8, saque: 7, efeito: 8, visao: 10 },
         description: 'o atual ápice do ping pong, ser canhoto trás uma vantagem absurda durante as partidas, pensamento rápido e confiança.',
         style: '4 Dedos',
         weaknesses: ['Excesso de confiança (ocasional)', 'Raiva excessiva em pontos por sorte do oponente'],
@@ -183,7 +199,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-leonardo', 
         name: 'Leonardo', 
-        stats: { ataque: 8, defesa: 8, saque: 7, efeito: 7, visao: 8 },
+        stats: { ataque: 7, defesa: 7, saque: 7, efeito: 7, visao: 8 },
         description: 'jogador adpatél, se torna melhor quanto mais joga contra outra pessoa, não possui pensamentos lógicos durante as partidas, jogando quase por puro estinto, sua fraqueza é falar enquanto joga e ataques no lado esquerdo superior.',
         style: '4 Dedos',
         weaknesses: ['Falar enquanto joga', 'Lado esquerdo superior'],
@@ -210,7 +226,7 @@ const TOPICS: Topic[] = [
         name: 'Enzio', 
         stats: { ataque: 4, defesa: 5, saque: 2, efeito: 0, visao: 3 },
         description: 'Jogador semi aposentado, não tem nenhuma qualidade muito grande e precisa aprender efeito.',
-        style: 'Horizontal',
+        style: 'clássico',
         weaknesses: ['Falta de efeito', 'Falta de qualidades técnicas marcantes']
       },
     ]
@@ -319,11 +335,136 @@ const RadarChart = ({ stats, color }: { stats: Stats; color: string }) => {
   );
 };
 
+const PingPongMaru = () => {
+  const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([
+    { role: 'model', text: 'Olá! Eu sou o PingPong-Maru, a IA oficial do PingPong Catalog. Como posso ajudar você hoje com informações sobre nossos jogadores e habilidades?' }
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = input.trim();
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setIsLoading(true);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      const model = "gemini-3-flash-preview";
+      
+      const context = `
+        Você é o PingPong-Maru, um assistente especializado no PingPong Catalog.
+        Aqui estão os dados dos jogadores e habilidades disponíveis:
+
+        JOGADORES:
+        ${TOPICS.map(t => t.players.map(p => `- ${p.name} (${t.title}): ${p.description}. Status: Ataque ${p.stats.ataque}, Defesa ${p.stats.defesa}, Saque ${p.stats.saque}, Efeito ${p.stats.efeito}, Visão ${p.stats.visao}. Estilo: ${p.style}. Habilidades: ${p.skills?.join(', ') || 'Nenhuma'}.`).join('\n')).join('\n')}
+
+        HABILIDADES:
+        ${SKILLS.map(s => `- ${s.name} (Rank ${s.rank}): ${s.description}`).join('\n')}
+
+        Responda de forma prestativa, técnica e amigável. Se não souber algo, admita.
+      `;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: [
+          { role: 'user', parts: [{ text: context }] },
+          ...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
+          { role: 'user', parts: [{ text: userMessage }] }
+        ]
+      });
+
+      const text = response.text || "Desculpe, tive um problema ao processar sua resposta.";
+      setMessages(prev => [...prev, { role: 'model', text }]);
+    } catch (error) {
+      console.error(error);
+      setMessages(prev => [...prev, { role: 'model', text: "Ocorreu um erro na conexão com meus sistemas. Por favor, tente novamente mais tarde." }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full h-[calc(100vh-80px)] flex flex-col bg-[#121214] border-white/10 overflow-hidden shadow-2xl"
+    >
+      <div className="p-6 border-b border-white/5 bg-white/[0.02] flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+          <Bot className="w-6 h-6 text-black" />
+        </div>
+        <div>
+          <h3 className="text-xl font-black tracking-tight uppercase">PingPong-Maru</h3>
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Sistemas Operacionais</span>
+          </div>
+        </div>
+      </div>
+
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+        {messages.map((m, i) => (
+          <div key={i} className={cn("flex", m.role === 'user' ? "justify-end" : "justify-start")}>
+            <div className={cn(
+              "max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed",
+              m.role === 'user' 
+                ? "bg-orange-500 text-black font-medium rounded-tr-none" 
+                : "bg-white/5 border border-white/5 text-slate-300 rounded-tl-none"
+            )}>
+              {m.text}
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-white/5 border border-white/5 p-4 rounded-2xl rounded-tl-none flex gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" />
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:0.2s]" />
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:0.4s]" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="p-6 border-t border-white/5 bg-white/[0.01]">
+        <div className="relative">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Pergunte sobre jogadores, habilidades ou rankings..."
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-16 text-sm focus:outline-none focus:border-orange-500/50 transition-all placeholder:text-slate-600"
+          />
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isLoading}
+            className="absolute right-2 top-2 bottom-2 w-12 bg-orange-500 rounded-xl flex items-center justify-center text-black hover:bg-orange-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'jogadores' | 'habilidades' | 'analise'>('jogadores');
+  const [activeTab, setActiveTab] = useState<'jogadores' | 'habilidades' | 'analise' | 'maru'>('jogadores');
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [analysisPlayer, setAnalysisPlayer] = useState<Player | null>(null);
+  const [skillPageIndex, setSkillPageIndex] = useState(0);
   
   const activeTopic = activeTopicId ? TOPICS.find(t => t.id === activeTopicId) : null;
 
@@ -364,11 +505,20 @@ export default function App() {
             >
               Análise
             </span>
+            <span 
+              onClick={() => setActiveTab('maru')}
+              className={`cursor-pointer transition-colors ${activeTab === 'maru' ? 'text-orange-500' : 'hover:text-white'}`}
+            >
+              PingPong-Maru
+            </span>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-12">
+      <main className={cn(
+        "relative z-10 mx-auto transition-all duration-500",
+        activeTab === 'maru' ? "max-w-none px-0 py-0" : "max-w-7xl px-6 py-12"
+      )}>
         {activeTab === 'jogadores' ? (
           <>
             <div className="mb-12">
@@ -495,47 +645,104 @@ export default function App() {
           </>
         ) : activeTab === 'habilidades' ? (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-12"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-4xl mx-auto"
           >
-            <div className="mb-12">
-              <div className="flex items-center gap-2 mb-4">
-                <Activity className="w-4 h-4 text-orange-500" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500">Conhecimento Técnico</span>
+            <div className="mb-12 text-center">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <BookOpen className="w-4 h-4 text-orange-500" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500">Grimório Técnico</span>
               </div>
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none mb-4">
-                Habilidades <br />
-                <span className="text-slate-700">Conhecidas.</span>
+              <h2 className="text-5xl md:text-6xl font-black tracking-tighter uppercase leading-none mb-4">
+                Livro de <br />
+                <span className="text-slate-700">Habilidades.</span>
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {SKILLS.map((skill) => (
-                <div 
-                  key={skill.name}
-                  className="bg-[#121214] border border-white/5 rounded-3xl p-8 hover:border-orange-500/30 transition-all group"
-                >
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500 transition-colors">
-                      <Target className="w-6 h-6 text-orange-500 group-hover:text-black transition-colors" />
+            <div className="relative aspect-[1.4/1] bg-[#121214] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex">
+              {/* Book Spine */}
+              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10 z-10 shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+              
+              {/* Left Page (Index/Decoration) */}
+              <div className="flex-1 p-8 border-r border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent">
+                <div className="h-full flex flex-col">
+                  <div className="mb-8">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">Sumário de Técnicas</h4>
+                    <div className="space-y-2">
+                      {SKILLS.map((s, i) => (
+                        <button
+                          key={s.name}
+                          onClick={() => setSkillPageIndex(i)}
+                          className={cn(
+                            "w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                            skillPageIndex === i ? "bg-orange-500 text-black" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                          )}
+                        >
+                          {String(i + 1).padStart(2, '0')}. {s.name}
+                        </button>
+                      ))}
                     </div>
-                    <h3 className="text-2xl font-black tracking-tight uppercase">{skill.name}</h3>
                   </div>
-                  <p className="text-slate-400 leading-relaxed italic mb-6">
-                    "{skill.description}"
-                  </p>
-                  {skill.rank && (
-                    <div className="flex justify-end">
-                      <div className="text-4xl font-black italic text-orange-500">
-                        {skill.rank}
+                  <div className="mt-auto opacity-20">
+                    <Activity className="w-24 h-24 text-orange-500" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Page (Content) */}
+              <div className="flex-1 p-12 relative bg-gradient-to-bl from-white/[0.02] to-transparent">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={skillPageIndex}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="h-full flex flex-col"
+                  >
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                        <Target className="w-6 h-6 text-orange-500" />
+                      </div>
+                      <div className="text-5xl font-black italic text-orange-500/20 leading-none">
+                        {SKILLS[skillPageIndex].rank}
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    <h3 className="text-3xl font-black tracking-tight uppercase mb-6 text-orange-500">
+                      {SKILLS[skillPageIndex].name}
+                    </h3>
+                    
+                    <p className="text-slate-300 leading-relaxed italic text-lg mb-8">
+                      "{SKILLS[skillPageIndex].description}"
+                    </p>
+
+                    <div className="mt-auto flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                      <span>Página {skillPageIndex + 1}</span>
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => setSkillPageIndex(prev => Math.max(0, prev - 1))}
+                          disabled={skillPageIndex === 0}
+                          className="hover:text-orange-500 disabled:opacity-20 transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setSkillPageIndex(prev => Math.min(SKILLS.length - 1, prev + 1))}
+                          disabled={skillPageIndex === SKILLS.length - 1}
+                          className="hover:text-orange-500 disabled:opacity-20 transition-colors"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
           </motion.div>
+        ) : activeTab === 'maru' ? (
+          <PingPongMaru />
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
