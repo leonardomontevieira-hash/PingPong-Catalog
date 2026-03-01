@@ -5,8 +5,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Activity, LayoutGrid, ChevronRight, Info, X, Target, MessageSquare, Send, Bot, ChevronLeft, BookOpen } from 'lucide-react';
+import { User, Activity, LayoutGrid, ChevronRight, Info, X, Target, MessageSquare, Send, Bot, ChevronLeft, BookOpen, Search } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+import Markdown from 'react-markdown';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -238,7 +239,7 @@ const TOPICS: Topic[] = [
       { 
         id: 'extra-arakem', 
         name: 'Arakem', 
-        stats: { ataque: 7, defesa: 8, saque: 8, efeito: 7, visao: 8 },
+        stats: { ataque: 7, defesa: 7, saque: 7, efeito: 6, visao: 8 },
         description: 'rápido, inteligente, boa defesa mas possui a fatidica defesa no lado esquerdo, sem contar a quantidade de tentativas de ataques falhos.',
         style: 'caneta',
         weaknesses: ['Lado esquerdo vulnerável', 'Tentativas de ataques falhos']
@@ -464,8 +465,63 @@ export default function App() {
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [analysisPlayer, setAnalysisPlayer] = useState<Player | null>(null);
+  const [comparePlayers, setComparePlayers] = useState<Player[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
   const [skillPageIndex, setSkillPageIndex] = useState(0);
-  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationResult, setSimulationResult] = useState<string | null>(null);
+
+  const simulateMatch = async () => {
+    if (comparePlayers.length < 2) return;
+    
+    setIsSimulating(true);
+    setSimulationResult(null);
+    
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      const model = "gemini-3-flash-preview";
+      
+      const playersInfo = comparePlayers.map(p => ({
+        nome: p.name,
+        estilo: p.style,
+        stats: p.stats,
+        rank: getRank(getAverage(p.stats)),
+        habilidades: p.skills?.join(', ') || 'Nenhuma',
+        descricao: p.description
+      }));
+
+      const prompt = `Simule uma partida épica de tênis de mesa entre os seguintes jogadores:
+      ${JSON.stringify(playersInfo, null, 2)}
+      
+      Descreva a partida de forma emocionante e detalhada, destacando:
+      1. O confronto inicial e como os estilos de jogo se chocam.
+      2. Momentos críticos onde as habilidades especiais (como 'Mestre do efeito', 'Tela preta', etc.) são utilizadas.
+      3. A evolução do placar e a tensão psicológica.
+      4. O ponto final decisivo.
+      5. No final, declare um vencedor baseado nas estatísticas, habilidades e na narrativa criada.
+      
+      A resposta deve ser em Português Brasileiro, com tom de narrador esportivo profissional e formatada com Markdown elegante.`;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      });
+
+      setSimulationResult(response.text || "Não foi possível gerar a simulação.");
+    } catch (error) {
+      console.error("Erro na simulação:", error);
+      setSimulationResult("Ocorreu um erro ao tentar simular a partida. Verifique sua conexão e tente novamente.");
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
+  const allPlayers = TOPICS.flatMap(t => t.players.map(p => ({ ...p, topicId: t.id })));
+  const filteredPlayers = searchQuery.trim() 
+    ? allPlayers.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : null;
+
   const activeTopic = activeTopicId ? TOPICS.find(t => t.id === activeTopicId) : null;
 
   return (
@@ -521,40 +577,139 @@ export default function App() {
       )}>
         {activeTab === 'jogadores' ? (
           <>
-            <div className="mb-12">
-              <div className="flex items-center gap-2 mb-4">
-                <LayoutGrid className="w-4 h-4 text-orange-500" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500">Avaliação Técnica</span>
+            <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <LayoutGrid className="w-4 h-4 text-orange-500" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500">Avaliação Técnica</span>
+                </div>
+                <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none">
+                  Desempenho <br />
+                  <span className="text-slate-700">dos Jogadores.</span>
+                </h2>
               </div>
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none mb-4">
-                Desempenho <br />
-                <span className="text-slate-700">dos Jogadores.</span>
-              </h2>
+
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar jogador por nome..."
+                  className="w-full bg-[#121214] border border-white/10 rounded-xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-orange-500/50 transition-all placeholder:text-slate-600"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Topic Selector */}
-            <div className="flex flex-wrap gap-3 mb-12">
-              {TOPICS.map((topic) => (
-                <button
-                  key={topic.id}
-                  onClick={() => setActiveTopicId(topic.id)}
-                  className={`px-8 py-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${
-                    activeTopicId === topic.id
-                      ? 'bg-orange-500 border-orange-500 text-black shadow-lg shadow-orange-500/20'
-                      : 'bg-[#121214] border-white/5 text-slate-500 hover:border-white/10'
-                  }`}
-                >
-                  <span className="text-2xl font-black">{topic.id}</span>
-                  {topic.id !== topic.title && (
-                    <span className="text-[10px] font-bold uppercase tracking-widest">{topic.title}</span>
-                  )}
-                </button>
-              ))}
-            </div>
+            {!searchQuery && (
+              <div className="flex flex-wrap gap-3 mb-12">
+                {TOPICS.map((topic) => (
+                  <button
+                    key={topic.id}
+                    onClick={() => setActiveTopicId(topic.id)}
+                    className={`px-8 py-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${
+                      activeTopicId === topic.id
+                        ? 'bg-orange-500 border-orange-500 text-black shadow-lg shadow-orange-500/20'
+                        : 'bg-[#121214] border-white/5 text-slate-500 hover:border-white/10'
+                    }`}
+                  >
+                    <span className="text-2xl font-black">{topic.id}</span>
+                    {topic.id !== topic.title && (
+                      <span className="text-[10px] font-bold uppercase tracking-widest">{topic.title}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Players Grid */}
             <AnimatePresence mode="wait">
-              {activeTopic ? (
+              {searchQuery ? (
+                <motion.div
+                  key="search-results"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                  {filteredPlayers && filteredPlayers.length > 0 ? (
+                    filteredPlayers.map((player) => (
+                      <motion.div 
+                        key={player.id}
+                        whileHover={{ scale: 1.02 }}
+                        onClick={() => setSelectedPlayer(player)}
+                        className="bg-[#121214] border border-white/5 rounded-2xl p-8 hover:border-orange-500/30 transition-all group cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between mb-8">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-orange-500 transition-colors">
+                              <User className="w-6 h-6 text-slate-400 group-hover:text-black transition-colors" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold tracking-tight">{player.name}</h3>
+                              <div className="flex items-center gap-2">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">ID: {player.id}</p>
+                                <span className="text-[8px] px-1.5 py-0.5 bg-orange-500/10 text-orange-500 rounded border border-orange-500/20 font-black uppercase tracking-tighter">
+                                  {player.style}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold text-slate-400">
+                            {player.topicId === 'Extra' ? player.topicId : `${player.topicId}ºano`}
+                          </div>
+                        </div>
+
+                        <div className="mb-8">
+                          <RadarChart stats={player.stats} color="#F97316" />
+                        </div>
+
+                        <div className="space-y-3">
+                          {(Object.entries(player.stats) as [string, number][]).map(([key, val]) => (
+                            <div key={key} className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                {key === 'visao' ? 'Visão de Jogo' : key.charAt(0).toUpperCase() + key.slice(1)}
+                              </span>
+                              <div className="flex items-center gap-3">
+                                <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${val * 10}%` }}
+                                    className="h-full bg-orange-500"
+                                  />
+                                </div>
+                                <span className="text-xs font-mono font-bold w-8 text-right">{val}/10</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-8 flex items-center justify-between gap-2">
+                          <div className={`text-3xl font-black italic ${getRankColor(getRank(getAverage(player.stats)))}`}>
+                            {getRank(getAverage(player.stats))}
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Clique para ver descrição <ChevronRight className="w-3 h-3" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-3xl">
+                      <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Nenhum jogador encontrado com "{searchQuery}"</p>
+                    </div>
+                  )}
+                </motion.div>
+              ) : activeTopic ? (
                 <motion.div
                   key={activeTopicId}
                   initial={{ opacity: 0, y: 20 }}
@@ -597,7 +752,7 @@ export default function App() {
                         </div>
 
                         <div className="space-y-3">
-                          {Object.entries(player.stats).map(([key, val]) => (
+                          {(Object.entries(player.stats) as [string, number][]).map(([key, val]) => (
                             <div key={key} className="flex items-center justify-between">
                               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                 {key === 'visao' ? 'Visão de Jogo' : key.charAt(0).toUpperCase() + key.slice(1)}
@@ -749,21 +904,38 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-12"
           >
-            <div className="mb-12">
-              <div className="flex items-center gap-2 mb-4">
-                <Target className="w-4 h-4 text-orange-500" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500">Análise de Desempenho</span>
+            <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Target className="w-4 h-4 text-orange-500" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500">Análise de Desempenho</span>
+                </div>
+                <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none mb-4">
+                  Ranking <br />
+                  <span className="text-slate-700">Geral.</span>
+                </h2>
               </div>
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none mb-4">
-                Ranking <br />
-                <span className="text-slate-700">Geral.</span>
-              </h2>
+
+              {comparePlayers.length >= 2 && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={() => setShowComparison(true)}
+                  className="px-8 py-4 bg-orange-500 text-black font-black uppercase tracking-widest rounded-xl hover:bg-orange-400 transition-all shadow-lg shadow-orange-500/20 flex items-center gap-3"
+                >
+                  <Activity className="w-5 h-5" />
+                  Comparar {comparePlayers.length} Jogadores
+                </motion.button>
+              )}
             </div>
 
             <div className="bg-[#121214] border border-white/5 rounded-3xl overflow-hidden">
               <div className="grid grid-cols-12 gap-4 p-6 border-b border-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                <div className="col-span-1 flex items-center justify-center">
+                  <div className="w-4 h-4" />
+                </div>
                 <div className="col-span-1">#</div>
-                <div className="col-span-5">Jogador</div>
+                <div className="col-span-4">Jogador</div>
                 <div className="col-span-2 text-center">Ano</div>
                 <div className="col-span-2 text-center">Média</div>
                 <div className="col-span-2 text-right">Rank</div>
@@ -771,37 +943,76 @@ export default function App() {
               <div className="divide-y divide-white/5">
                 {TOPICS.flatMap(t => t.players.map(p => ({ ...p, topicId: t.id })))
                   .sort((a, b) => getAverage(b.stats) - getAverage(a.stats))
-                  .map((player, index) => (
-                    <div 
-                      key={player.id}
-                      onClick={() => setAnalysisPlayer(player)}
-                      className="grid grid-cols-12 gap-4 p-6 items-center hover:bg-white/5 transition-colors cursor-pointer group"
-                    >
-                      <div className="col-span-1 font-mono text-slate-500">
-                        {String(index + 1).padStart(2, '0')}
-                      </div>
-                      <div className="col-span-5 flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-orange-500 transition-colors">
-                          <User className="w-5 h-5 text-slate-500 group-hover:text-black transition-colors" />
+                  .map((player, index) => {
+                    const isSelected = comparePlayers.some(p => p.id === player.id);
+                    return (
+                      <div 
+                        key={player.id}
+                        className={cn(
+                          "grid grid-cols-12 gap-4 p-6 items-center hover:bg-white/5 transition-colors cursor-pointer group",
+                          isSelected && "bg-orange-500/5 border-l-2 border-orange-500"
+                        )}
+                      >
+                        <div 
+                          className="col-span-1 flex items-center justify-center"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isSelected) {
+                              setComparePlayers(prev => prev.filter(p => p.id !== player.id));
+                            } else {
+                              setComparePlayers(prev => [...prev, player]);
+                            }
+                          }}
+                        >
+                          <div className={cn(
+                            "w-5 h-5 rounded border flex items-center justify-center transition-all",
+                            isSelected ? "bg-orange-500 border-orange-500" : "border-white/20 group-hover:border-orange-500/50"
+                          )}>
+                            {isSelected && <X className="w-3 h-3 text-black" />}
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-bold text-white group-hover:text-orange-500 transition-colors">{player.name}</div>
-                          <div className="text-[8px] font-bold uppercase tracking-widest text-slate-500">{player.style}</div>
+                        <div 
+                          className="col-span-1 font-mono text-slate-500"
+                          onClick={() => setAnalysisPlayer(player)}
+                        >
+                          {String(index + 1).padStart(2, '0')}
+                        </div>
+                        <div 
+                          className="col-span-4 flex items-center gap-4"
+                          onClick={() => setAnalysisPlayer(player)}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-orange-500 transition-colors">
+                            <User className="w-5 h-5 text-slate-500 group-hover:text-black transition-colors" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-white group-hover:text-orange-500 transition-colors">{player.name}</div>
+                            <div className="text-[8px] font-bold uppercase tracking-widest text-slate-500">{player.style}</div>
+                          </div>
+                        </div>
+                        <div 
+                          className="col-span-2 text-center text-xs font-bold text-slate-400"
+                          onClick={() => setAnalysisPlayer(player)}
+                        >
+                          {player.topicId === 'Extra' ? player.topicId : `${player.topicId}º`}
+                        </div>
+                        <div 
+                          className="col-span-2 text-center font-mono font-black text-orange-500"
+                          onClick={() => setAnalysisPlayer(player)}
+                        >
+                          {getAverage(player.stats).toFixed(1)}
+                        </div>
+                        <div 
+                          className="col-span-2 text-right"
+                          onClick={() => setAnalysisPlayer(player)}
+                        >
+                          <span className="text-xl font-black italic text-orange-500">{getRank(getAverage(player.stats))}</span>
                         </div>
                       </div>
-                      <div className="col-span-2 text-center text-xs font-bold text-slate-400">
-                        {player.topicId === 'Extra' ? player.topicId : `${player.topicId}º`}
-                      </div>
-                      <div className="col-span-2 text-center font-mono font-black text-orange-500">
-                        {getAverage(player.stats).toFixed(1)}
-                      </div>
-                      <div className="col-span-2 text-right">
-                        <span className="text-xl font-black italic text-orange-500">{getRank(getAverage(player.stats))}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
+
           </motion.div>
         )}
 
@@ -908,6 +1119,149 @@ export default function App() {
                 >
                   Fechar Perfil
                 </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showComparison && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowComparison(false)}
+                className="absolute inset-0 bg-black/90 backdrop-blur-md"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-6xl bg-[#121214] border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              >
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h3 className="text-3xl font-black tracking-tight uppercase">Comparação de Atletas</h3>
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Análise técnica lado a lado</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowComparison(false)}
+                    className="p-2 hover:bg-white/5 rounded-full transition-colors"
+                  >
+                    <X className="w-6 h-6 text-slate-500" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-6 min-w-max pb-4">
+                    {comparePlayers.map((player) => (
+                      <div key={player.id} className="w-80 bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col">
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
+                            <User className="w-6 h-6 text-black" />
+                          </div>
+                          <div className="overflow-hidden">
+                            <h4 className="text-lg font-black tracking-tight truncate">{player.name}</h4>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-orange-500">Rank {getRank(getAverage(player.stats))}</span>
+                              <span className="text-[8px] px-1.5 py-0.5 bg-white/5 text-slate-500 rounded border border-white/10 font-black uppercase tracking-tighter">
+                                {player.style}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mb-6">
+                          <RadarChart stats={player.stats} color="#F97316" />
+                        </div>
+
+                        <div className="space-y-4 flex-1">
+                          {(Object.entries(player.stats) as [string, number][]).map(([key, val]) => (
+                            <div key={key}>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
+                                  {key === 'visao' ? 'Visão de Jogo' : key.charAt(0).toUpperCase() + key.slice(1)}
+                                </span>
+                                <span className="text-xs font-mono font-bold text-orange-500">{val}/10</span>
+                              </div>
+                              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${val * 10}%` }}
+                                  className="h-full bg-orange-500"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-8 pt-6 border-t border-white/5">
+                          <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Média de Desempenho</div>
+                          <div className="text-3xl font-black text-white">
+                            {getAverage(player.stats).toFixed(1)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-col gap-6">
+                  {simulationResult && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl max-h-64 overflow-y-auto scrollbar-hide"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Bot className="w-4 h-4 text-orange-500" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-orange-500">Simulação de Partida (IA)</span>
+                      </div>
+                      <div className="prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed italic">
+                        <Markdown>{simulationResult}</Markdown>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  <div className="flex justify-end gap-4">
+                    <button 
+                      onClick={simulateMatch}
+                      disabled={isSimulating}
+                      className="flex items-center gap-2 px-8 py-3 bg-orange-500 text-black font-black uppercase tracking-widest rounded-xl hover:bg-orange-400 transition-colors disabled:opacity-50"
+                    >
+                      {isSimulating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                          Simulando...
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="w-4 h-4" />
+                          Simular Partida
+                        </>
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setComparePlayers([]);
+                        setSimulationResult(null);
+                      }}
+                      className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
+                    >
+                      Limpar Seleção
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowComparison(false);
+                        setSimulationResult(null);
+                      }}
+                      className="px-8 py-3 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest rounded-xl hover:bg-white/10 transition-colors"
+                    >
+                      Fechar Comparação
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             </div>
           )}
