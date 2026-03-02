@@ -124,7 +124,7 @@ const TOPICS: Topic[] = [
       { 
         id: '8-kevin', 
         name: 'Kevin', 
-        stats: { ataque: 8, defesa: 5, saque: 6, efeito: 4, visao: 8 },
+        stats: { ataque: 8, defesa: 7, saque: 6, efeito: 6, visao: 8 },
         description: 'um jogador feito para matar, não conseguindo se segurar durante as partidas, isso acaba prejudicando sua defesa.',
         style: '1 dedo',
         weaknesses: ['Defesa vulnerável por agressividade excessiva', 'Falta de autocontrole ofensivo'],
@@ -148,7 +148,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-ph', 
         name: 'PH', 
-        stats: { ataque: 5, defesa: 5, saque: 4, efeito: 5, visao: 4 },
+        stats: { ataque: 5, defesa: 6, saque: 5, efeito: 5, visao: 5 },
         description: 'um jogador abaixo da media, não apresenta grandes evoluções com o decorrer do tempo, sabe o básico e entende as regras, mas não parece entender o verdadeiro motivo para não evoluir.',
         style: '4 Dedos',
         weaknesses: ['Falta de evolução', 'Dificuldade técnica básica']
@@ -164,7 +164,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-breno', 
         name: 'Breno', 
-        stats: { ataque: 7, defesa: 7, saque: 7, efeito: 6, visao: 6 },
+        stats: { ataque: 7, defesa: 7, saque: 6, efeito: 6, visao: 6 },
         description: 'Talentoso, aprende rápido e analiza outros jogos para adaptar técnicas para suas partidas, um jogados equilibrado em constante evolução, uma das suas fraquezas é jogadas excessivas ao lado esquerdo dele, uma hora a defesa dele quebra.',
         style: '4 Dedos',
         weaknesses: ['Lado esquerdo vulnerável']
@@ -209,7 +209,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-yan', 
         name: 'Yan', 
-        stats: { ataque: 6, defesa: 7, saque: 6, efeito: 7, visao: 7 },
+        stats: { ataque: 7, defesa: 8, saque: 6, efeito: 7, visao: 7 },
         description: 'Jogador malicioso, sempre apto pra cortar ou finalizar, com cartas na manga a maioria do tempo',
         style: '4 Dedos',
         skills: ['fake saque']
