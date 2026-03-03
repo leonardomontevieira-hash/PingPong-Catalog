@@ -124,7 +124,7 @@ const TOPICS: Topic[] = [
       { 
         id: '8-kevin', 
         name: 'Kevin', 
-        stats: { ataque: 8, defesa: 7, saque: 6, efeito: 6, visao: 8 },
+        stats: { ataque: 8, defesa: 7, saque: 6, efeito: 5, visao: 8 },
         description: 'um jogador feito para matar, não conseguindo se segurar durante as partidas, isso acaba prejudicando sua defesa.',
         style: '1 dedo',
         weaknesses: ['Defesa vulnerável por agressividade excessiva', 'Falta de autocontrole ofensivo'],
