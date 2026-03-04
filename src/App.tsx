@@ -139,7 +139,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-dutra', 
         name: 'Dutra', 
-        stats: { ataque: 7, defesa: 9, saque: 7, efeito: 6, visao: 8 },
+        stats: { ataque: 8, defesa: 9, saque: 8, efeito: 6, visao: 8 },
         description: 'Um jogador com talento nato, aprende rápido e decora padrões de médio porte, a melhor estratégia é um ataque sem trégua, por mais que sua defesa seja alta, o escudo sempre quebra.',
         style: 'clássico',
         weaknesses: ['Ataque sem trégua (escudo quebra)', 'Pressão constante'],
