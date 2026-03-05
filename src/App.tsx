@@ -200,7 +200,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-leonardo', 
         name: 'Leonardo', 
-        stats: { ataque: 7, defesa: 7, saque: 7, efeito: 7, visao: 8 },
+        stats: { ataque: 7, defesa: 8, saque: 7, efeito: 8, visao: 8 },
         description: 'jogador adpatél, se torna melhor quanto mais joga contra outra pessoa, não possui pensamentos lógicos durante as partidas, jogando quase por puro estinto, sua fraqueza é falar enquanto joga e ataques no lado esquerdo superior.',
         style: '4 Dedos',
         weaknesses: ['Falar enquanto joga', 'Lado esquerdo superior'],
@@ -209,7 +209,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-yan', 
         name: 'Yan', 
-        stats: { ataque: 7, defesa: 8, saque: 6, efeito: 7, visao: 7 },
+        stats: { ataque: 8, defesa: 8, saque: 6, efeito: 9, visao: 7 },
         description: 'Jogador malicioso, sempre apto pra cortar ou finalizar, com cartas na manga a maioria do tempo',
         style: '4 Dedos',
         skills: ['fake saque']
