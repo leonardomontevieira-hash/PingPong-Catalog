@@ -212,7 +212,7 @@ const TOPICS: Topic[] = [
         stats: { ataque: 8, defesa: 8, saque: 6, efeito: 9, visao: 7 },
         description: 'Jogador malicioso, sempre apto pra cortar ou finalizar, com cartas na manga a maioria do tempo',
         style: '4 Dedos',
-        skills: ['fake saque']
+        skills: ['fake saque', 'Mestre do efeito']
       },
       { 
         id: '9-catota', 
@@ -225,7 +225,7 @@ const TOPICS: Topic[] = [
       { 
         id: '9-enzio', 
         name: 'Enzio', 
-        stats: { ataque: 4, defesa: 5, saque: 2, efeito: 0, visao: 3 },
+        stats: { ataque: 6, defesa: 8, saque: 2, efeito: 0, visao: 6 },
         description: 'Jogador semi aposentado, não tem nenhuma qualidade muito grande e precisa aprender efeito.',
         style: 'clássico',
         weaknesses: ['Falta de efeito', 'Falta de qualidades técnicas marcantes']
